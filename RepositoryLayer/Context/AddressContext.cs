@@ -7,6 +7,6 @@ namespace AddressBookApplication.RepositoryLayer.Context
     {
         public AddressContext(DbContextOptions<AddressContext> options) : base(options) { }
 
-        public DbSet<AddressEntity> Addresses { get; set; } = null!;
+        public virtual DbSet<AddressEntity> Addresses { get; set; }
     }
 }

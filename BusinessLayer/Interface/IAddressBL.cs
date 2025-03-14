@@ -1,12 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using AddressBookApplication.ModelLayer.Entity;
 
-namespace BusinessLayer.Interface
+namespace AddressBookApplication.BusinessLayer.Interface
 {
-   public class IAddressBL
+    public interface IAddressBL
     {
+        bool AddAddress(AddressEntity address);
+        List<AddressEntity> GetAllAddresses();
+        AddressEntity GetAddressById(int id);
+        bool UpdateAddress(int id, AddressEntity address);
+        bool DeleteAddress(int id);
     }
 }
