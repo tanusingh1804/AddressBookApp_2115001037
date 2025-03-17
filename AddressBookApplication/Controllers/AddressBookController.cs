@@ -1,54 +1,109 @@
+using AutoMapper;
+using BusinessLayer.Interface;
+using BusinessLayer.Interface;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using ModelLayer.DTO;
+using RepositoryLayer.Entity;
 using System.Collections.Generic;
-using AddressBookApplication.BusinessLayer.Interface;
-using AddressBookApplication.ModelLayer.Entity;
 
-namespace AddressBookApplication.Controllers
+namespace Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/AddressBook")]
     [ApiController]
-    public class AddressController : ControllerBase
+    public class AddressBookController : ControllerBase
     {
-        private readonly IAddressBL _addressBL;
+        private readonly IAddressBookBL _addressBookBL;
+        private readonly IMapper _mapper;
+        private readonly IValidator<AddressBookDTO> _validator;
 
-        public AddressController(IAddressBL addressBL)
+        public AddressBookController(IAddressBookBL addressBookBL, IMapper mapper, IValidator<AddressBookDTO> validator)
         {
-            _addressBL = addressBL;
+            _addressBookBL = addressBookBL;
+            _mapper = mapper;
+            _validator = validator;
         }
 
-        [HttpPost("AddAddress")]
-        public IActionResult AddAddress([FromBody] AddressEntity address)
+        //  Get All Contacts
+        [HttpGet("GetAllContacts")]
+        public IActionResult GetAllContacts()
         {
-            bool result = _addressBL.AddAddress(address);
-            return Ok(new { success = result });
+            var contacts = _addressBookBL.GetAllContacts();
+            var contactDTOs = _mapper.Map<List<AddressBookDTO>>(contacts);
+            return Ok(contactDTOs);
         }
 
-        [HttpGet("GetAllAddresses")]
-        public IActionResult GetAllAddresses()
+        // Get Contact By ID
+        [HttpGet("GetContactById/{id}")]
+        public IActionResult GetContactById(int id)
         {
-            var result = _addressBL.GetAllAddresses();
-            return Ok(new { success = result });
+            var contact = _addressBookBL.GetContactById(id);
+            if (contact == null)
+            {
+                return NotFound(new { Message = "Contact not found!" });
+            }
+
+            var contactDTO = _mapper.Map<AddressBookDTO>(contact);
+            return Ok(contactDTO);
         }
 
-        [HttpGet("GetAddressById/{id}")]
-        public IActionResult GetAddressById(int id)
+        // Add New Contact (Fixed Route)
+        [HttpPost("AddContact")]
+        public IActionResult AddContact([FromBody] AddressBookDTO contactDTO)
         {
-            var result = _addressBL.GetAddressById(id);
-            return Ok(new { success = result });
+            var validationResult = _validator.Validate(contactDTO);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(validationResult.Errors);
+            }
+
+            var contactEntity = _mapper.Map<AddressEntity>(contactDTO);
+            var addedContact = _addressBookBL.AddContact(contactEntity);
+            var addedContactDTO = _mapper.Map<AddressBookDTO>(addedContact);
+
+            return CreatedAtAction(nameof(GetContactById), new { id = addedContact.Id }, addedContactDTO);
         }
 
-        [HttpPut("UpdateAddress/{id}")]
-        public IActionResult UpdateAddress(int id, [FromBody] AddressEntity updatedAddress)
+        // Update Contact
+        [HttpPut("UpdateContact/{id}")]
+        public IActionResult UpdateContact(int id, [FromBody] AddressBookDTO contactDTO)
         {
-            var result = _addressBL.UpdateAddress(id, updatedAddress);
-            return Ok(new { success = result });
+            var validationResult = _validator.Validate(contactDTO);
+            if (!validationResult.IsValid)
+            {
+                return BadRequest(validationResult.Errors);
+            }
+
+            var existingContact = _addressBookBL.GetContactById(id);
+            if (existingContact == null)
+            {
+                return NotFound(new { Message = "Contact not found!" });
+            }
+
+            var contactEntity = _mapper.Map<AddressEntity>(contactDTO);
+            var updatedContact = _addressBookBL.UpdateContact(id, contactEntity);
+            var updatedContactDTO = _mapper.Map<AddressBookDTO>(updatedContact);
+
+            return Ok(updatedContactDTO);
         }
 
-        [HttpDelete("DeleteAddress/{id}")]
-        public IActionResult DeleteAddress(int id)
+        // Delete Contact
+        [HttpDelete("DeleteContact/{id}")]
+        public IActionResult DeleteContact(int id)
         {
-            var result = _addressBL.DeleteAddress(id);
-            return Ok(new { success = result });
+            var existingContact = _addressBookBL.GetContactById(id);
+            if (existingContact == null)
+            {
+                return NotFound(new { Message = "Contact not found!" });
+            }
+
+            bool isDeleted = _addressBookBL.DeleteContact(id);
+            if (!isDeleted)
+            {
+                return StatusCode(500, new { Message = "Error deleting contact!" });
+            }
+
+            return NoContent();
         }
     }
 }

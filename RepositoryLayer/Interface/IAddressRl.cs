@@ -1,14 +1,14 @@
-﻿using System.Collections.Generic;
-using AddressBookApplication.ModelLayer.Entity;
+﻿using RepositoryLayer.Entity;
+using System.Collections.Generic;
 
-namespace AddressBookApplication.RepositoryLayer.Interface
+namespace RepositoryLayer.Interface
 {
     public interface IAddressRL
     {
-        bool AddAddress(AddressEntity address);
-        List<AddressEntity> GetAllAddresses();
-        AddressEntity GetAddressById(int id);
-        bool UpdateAddress(int id, AddressEntity updatedAddress);
-        bool DeleteAddress(int id);
+        List<AddressEntity> GetAllContacts();
+        AddressEntity GetContactById(int id);
+        AddressEntity AddContact(AddressEntity contact);
+        AddressEntity UpdateContact(int id, AddressEntity contact);
+        bool DeleteContact(int id);
     }
 }

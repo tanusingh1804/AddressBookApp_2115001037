@@ -1,31 +1,49 @@
-using Microsoft.AspNetCore.Builder;
+using RepositoryLayer.Context;
+using BusinessLayer.Interface;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using AddressBookApplication.BusinessLayer.Interface;
-using AddressBookApplication.BusinessLayer.Service;
-using AddressBookApplication.RepositoryLayer.Interface;
-using AddressBookApplication.RepositoryLayer.Service;
-using AddressBookApplication.RepositoryLayer.Context;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using AutoMapper;
+using BusinessLayer.Validation;
+using BusinessLayer.Service;
+using RepositoryLayer.Interface;
+using RepositoryLayer.Service;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllers();
+// **Ensure Database Connection is Set**
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection"); // Fixed key name
+if (string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Database connection string is missing!");
+}
 
-// Register business and repository layers
-builder.Services.AddScoped<IAddressBL, AddressBL>();
+Console.WriteLine($"Connection String: {connectionString}"); // Debugging Purpose
+
+builder.Services.AddDbContext<AddressContext>(options =>
+    options.UseSqlServer(connectionString));
+
+// **Register Services**
+builder.Services.AddScoped<IAddressBookBL, AddressBL>();
 builder.Services.AddScoped<IAddressRL, AddressRL>();
 
-// Configure Database Connection
-var connectionString = builder.Configuration.GetConnectionString("SqlConnection");
-builder.Services.AddDbContext<AddressContext>(options => options.UseSqlServer(connectionString));
+builder.Services.AddControllers(); 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddAuthorization();   
+builder.Services.AddAuthentication();
+
+// **AutoMapper Setup**
+builder.Services.AddAutoMapper(typeof(AutomapperProfile));
+
+// **Fluent Validation**
+builder.Services.AddFluentValidationAutoValidation()
+                .AddFluentValidationClientsideAdapters();
+builder.Services.AddValidatorsFromAssemblyContaining<AddressBookValidator>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// **Middleware Configuration**
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
-
 app.Run();

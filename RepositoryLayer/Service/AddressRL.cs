@@ -1,10 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using RepositoryLayer.Context;
+using RepositoryLayer.Entity;
+using RepositoryLayer.Interface;
+using System.Collections.Generic;
 using System.Linq;
-using AddressBookApplication.RepositoryLayer.Context;
-using AddressBookApplication.ModelLayer.Entity;
-using AddressBookApplication.RepositoryLayer.Interface;
 
-namespace AddressBookApplication.RepositoryLayer.Service
+namespace RepositoryLayer.Service
 {
     public class AddressRL : IAddressRL
     {
@@ -15,43 +15,42 @@ namespace AddressBookApplication.RepositoryLayer.Service
             _context = context;
         }
 
-        public bool AddAddress(AddressEntity address)
-        {
-            _context.Addresses.Add(address);
-            _context.SaveChanges();
-            return true;
-        }
-
-        public List<AddressEntity> GetAllAddresses()
+        public List<AddressEntity> GetAllContacts()
         {
             return _context.Addresses.ToList();
         }
 
-        public AddressEntity GetAddressById(int id)
+        public AddressEntity GetContactById(int id)
         {
-            return _context.Addresses.FirstOrDefault(c => c.Id == id);
+            return _context.Addresses.FirstOrDefault(contact => contact.Id == id);
         }
 
-        public bool UpdateAddress(int id, AddressEntity updatedAddress)
+        public AddressEntity AddContact(AddressEntity contact)
         {
-            var existingAddress = _context.Addresses.Find(id);
-            if (existingAddress != null)
+            _context.Addresses.Add(contact);
+            _context.SaveChanges();
+            return contact;
+        }
+
+        public AddressEntity UpdateContact(int id, AddressEntity contact)
+        {
+            var existingContact = _context.Addresses.Find(id);
+            if (existingContact != null)
             {
-                existingAddress.Name = updatedAddress.Name;
-                existingAddress.Email = updatedAddress.Email;
-                existingAddress.Phone = updatedAddress.Phone;
+                existingContact.Name = contact.Name;
+                existingContact.Email = contact.Email;
+                existingContact.Address = contact.Address;
                 _context.SaveChanges();
-                return true;
             }
-            return false;
+            return existingContact;
         }
 
-        public bool DeleteAddress(int id)
+        public bool DeleteContact(int id)
         {
-            var address = _context.Addresses.Find(id);
-            if (address != null)
+            var contact = _context.Addresses.Find(id);
+            if (contact != null)
             {
-                _context.Addresses.Remove(address);
+                _context.Addresses.Remove(contact);
                 _context.SaveChanges();
                 return true;
             }

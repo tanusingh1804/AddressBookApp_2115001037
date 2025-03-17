@@ -1,42 +1,50 @@
-﻿using System.Collections.Generic;
-using AddressBookApplication.BusinessLayer.Interface;
-using AddressBookApplication.ModelLayer.Entity;
-using AddressBookApplication.RepositoryLayer.Interface;
+﻿using BusinessLayer.Interface;
+using RepositoryLayer.Entity;
+using RepositoryLayer.Interface;
 
-namespace AddressBookApplication.BusinessLayer.Service
+namespace BusinessLayer.Service
 {
-    public class AddressBL : IAddressBL
+    public class AddressBL : IAddressBookBL
     {
-        private readonly IAddressRL _addressRL;
+        private readonly IAddressRL _addressBookRL;
 
-        public AddressBL(IAddressRL addressRL)
+        public AddressBL(IAddressRL addressBookRL)
         {
-            _addressRL = addressRL;
+            _addressBookRL = addressBookRL;
         }
 
-        public bool AddAddress(AddressEntity address)
+        public List<AddressEntity> GetAllContacts()
         {
-            return _addressRL.AddAddress(address);
+            return _addressBookRL.GetAllContacts();
         }
 
-        public List<AddressEntity> GetAllAddresses()
+        public AddressEntity GetContactById(int id)
         {
-            return _addressRL.GetAllAddresses();
+            return _addressBookRL.GetContactById(id);
         }
 
-        public AddressEntity GetAddressById(int id)
+        public AddressEntity AddContact(AddressEntity contact)
         {
-            return _addressRL.GetAddressById(id);
+            if (string.IsNullOrEmpty(contact.Name) || string.IsNullOrEmpty(contact.Address))
+            {
+                throw new ArgumentException("Name and Address cannot be empty.");
+            }
+            return _addressBookRL.AddContact(contact);
         }
 
-        public bool UpdateAddress(int id, AddressEntity updatedAddress)
+        public AddressEntity UpdateContact(int id, AddressEntity contact)
         {
-            return _addressRL.UpdateAddress(id, updatedAddress);
+            var existingContact = _addressBookRL.GetContactById(id);
+            if (existingContact == null)
+            {
+                return null; // Not found
+            }
+            return _addressBookRL.UpdateContact(id, contact);
         }
 
-        public bool DeleteAddress(int id)
+        public bool DeleteContact(int id)
         {
-            return _addressRL.DeleteAddress(id);
+            return _addressBookRL.DeleteContact(id);
         }
     }
 }
