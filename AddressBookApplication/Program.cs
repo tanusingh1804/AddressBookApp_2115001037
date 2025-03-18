@@ -1,49 +1,56 @@
-using RepositoryLayer.Context;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using BusinessLayer.Interface;
-using Microsoft.EntityFrameworkCore;
-using FluentValidation;
-using FluentValidation.AspNetCore;
-using AutoMapper;
-using BusinessLayer.Validation;
 using BusinessLayer.Service;
 using RepositoryLayer.Interface;
 using RepositoryLayer.Service;
+using ModelLayer.DTO;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using AutoMapper;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model.Validation;
+using Microsoft.OpenApi.Models;
+using BusinessLayer.Validation;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// **Ensure Database Connection is Set**
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection"); // Fixed key name
-if (string.IsNullOrEmpty(connectionString))
-{
-    throw new InvalidOperationException("Database connection string is missing!");
-}
+// Add services to the DI container
+builder.Services.AddControllers();
 
-Console.WriteLine($"Connection String: {connectionString}"); // Debugging Purpose
-
-builder.Services.AddDbContext<AddressContext>(options =>
-    options.UseSqlServer(connectionString));
-
-// **Register Services**
-builder.Services.AddScoped<IAddressBookBL, AddressBL>();
-builder.Services.AddScoped<IAddressRL, AddressRL>();
-
-builder.Services.AddControllers(); 
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddAuthorization();   
-builder.Services.AddAuthentication();
-
-// **AutoMapper Setup**
+// AutoMapper Configuration
 builder.Services.AddAutoMapper(typeof(AutomapperProfile));
 
-// **Fluent Validation**
-builder.Services.AddFluentValidationAutoValidation()
-                .AddFluentValidationClientsideAdapters();
-builder.Services.AddValidatorsFromAssemblyContaining<AddressBookValidator>();
+// Register Business Layer Services
+builder.Services.AddScoped<IAddressBookService, AddressBookService>();
+
+// Register Repository Layer Services
+builder.Services.AddScoped<IAddressRL, AddressRL>();
+
+// FluentValidation Registration
+builder.Services.AddValidatorsFromAssemblyContaining<AddressBookDTO>();
+builder.Services.AddScoped<IValidator<AddressBookDTO>, AddressBookValidator>();
+
+// Swagger Configuration
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "AddressBook API", Version = "v1" });
+});
 
 var app = builder.Build();
 
-// **Middleware Configuration**
-app.UseHttpsRedirection();
+// Configure Middleware
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "AddressBook API v1"));
+}
+
+app.UseRouting();
 app.UseAuthorization();
+
 app.MapControllers();
 app.Run();
