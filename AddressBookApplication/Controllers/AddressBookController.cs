@@ -2,21 +2,22 @@ using AutoMapper;
 using BusinessLayer.Interface;
 using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
-using ModelLayer.DTO;
+using ModelLayer.Model;
 using RepositoryLayer.Entity;
+using System;
 using System.Collections.Generic;
 
 namespace Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/addressbook")]
     [ApiController]
     public class AddressBookController : ControllerBase
     {
-        private readonly IAddressBookService _addressBookService;
+        private readonly IAddressBookBL _addressBookService;
         private readonly IMapper _mapper;
-        private readonly IValidator<AddressBookDTO> _validator;
+        private readonly IValidator<Contact> _validator;
 
-        public AddressBookController(IAddressBookService addressBookService, IMapper mapper, IValidator<AddressBookDTO> validator)
+        public AddressBookController(IAddressBookBL addressBookService, IMapper mapper, IValidator<Contact> validator)
         {
             _addressBookService = addressBookService;
             _mapper = mapper;
@@ -27,7 +28,7 @@ namespace Controllers
         public IActionResult GetAllContacts()
         {
             var contacts = _addressBookService.GetAllContacts();
-            var contactDTOs = _mapper.Map<List<AddressBookDTO>>(contacts);
+            var contactDTOs = _mapper.Map<List<Contact>>(contacts);
             return Ok(contactDTOs);
         }
 
@@ -37,25 +38,25 @@ namespace Controllers
             var contact = _addressBookService.GetContactById(id);
             if (contact == null) return NotFound(new { Message = "Contact not found!" });
 
-            var contactDTO = _mapper.Map<AddressBookDTO>(contact);
+            var contactDTO = _mapper.Map<Contact>(contact);
             return Ok(contactDTO);
         }
 
         [HttpPost]
-        public IActionResult AddContact([FromBody] AddressBookDTO contactDTO)
+        public IActionResult AddContact([FromBody] Contact contactDTO)
         {
             var validationResult = _validator.Validate(contactDTO);
             if (!validationResult.IsValid) return BadRequest(validationResult.Errors);
 
-            var contactEntity = _mapper.Map<AddressEntity>(contactDTO);
+            var contactEntity = _mapper.Map<Contact>(contactDTO);
             var addedContact = _addressBookService.AddContact(contactEntity);
-            var addedContactDTO = _mapper.Map<AddressBookDTO>(addedContact);
+            var addedContactDTO = _mapper.Map<Contact>(addedContact);
 
             return CreatedAtAction(nameof(GetContactById), new { id = addedContact.Id }, addedContactDTO);
         }
 
         [HttpPut("{id}")]
-        public IActionResult UpdateContact(int id, [FromBody] AddressBookDTO contactDTO)
+        public IActionResult UpdateContact(int id, [FromBody] Contact contactDTO)
         {
             var validationResult = _validator.Validate(contactDTO);
             if (!validationResult.IsValid) return BadRequest(validationResult.Errors);
@@ -63,9 +64,9 @@ namespace Controllers
             var existingContact = _addressBookService.GetContactById(id);
             if (existingContact == null) return NotFound(new { Message = "Contact not found!" });
 
-            var contactEntity = _mapper.Map<AddressEntity>(contactDTO);
+            var contactEntity = _mapper.Map<Contact>(contactDTO);
             var updatedContact = _addressBookService.UpdateContact(id, contactEntity);
-            var updatedContactDTO = _mapper.Map<AddressBookDTO>(updatedContact);
+            var updatedContactDTO = _mapper.Map<Contact>(updatedContact);
 
             return Ok(updatedContactDTO);
         }

@@ -1,56 +1,66 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using BusinessLayer.Interface;
-using BusinessLayer.Service;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using RepositoryLayer.Context;
+using RepositoryLayer.Helper;
 using RepositoryLayer.Interface;
 using RepositoryLayer.Service;
-using ModelLayer.DTO;
-using FluentValidation;
-using FluentValidation.AspNetCore;
-using AutoMapper;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model.Validation;
-using Microsoft.OpenApi.Models;
-using BusinessLayer.Validation;
+using BusinessLayer.Interface;
+using BusinessLayer.Service;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the DI container
-builder.Services.AddControllers();
+// Load JWT Key
+var jwtKey = builder.Configuration["Jwt:Key"] ?? throw new Exception("JWT Key is missing!");
 
-// AutoMapper Configuration
-builder.Services.AddAutoMapper(typeof(AutomapperProfile));
+// Database Context
+builder.Services.AddDbContext<AddressContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Register Business Layer Services
-builder.Services.AddScoped<IAddressBookService, AddressBookService>();
-
-// Register Repository Layer Services
+// Register Repository Layer
+builder.Services.AddScoped<IUserRL, UserRL>();
 builder.Services.AddScoped<IAddressRL, AddressRL>();
 
-// FluentValidation Registration
-builder.Services.AddValidatorsFromAssemblyContaining<AddressBookDTO>();
-builder.Services.AddScoped<IValidator<AddressBookDTO>, AddressBookValidator>();
+// Register Business Layer
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAddressBookBL, AddressBL>();
 
-// Swagger Configuration
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
+// Register JwtService
+builder.Services.AddSingleton<JwtService>();
+
+// CORS Configuration (if needed)
+builder.Services.AddCors(options =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "AddressBook API", Version = "v1" });
+    options.AddPolicy("AllowAll",
+        policy => policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 });
+
+// Configure JWT Authentication
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure Middleware
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-    app.UseSwagger();
-    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "AddressBook API v1"));
-}
-
-app.UseRouting();
+app.UseCors("AllowAll");
+app.UseHttpsRedirection();
+app.UseAuthentication();
 app.UseAuthorization();
-
+app.UseSwagger();
+app.UseSwaggerUI();
 app.MapControllers();
 app.Run();

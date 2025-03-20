@@ -1,50 +1,53 @@
 ﻿using BusinessLayer.Interface;
-using RepositoryLayer.Entity;
-using RepositoryLayer.Interface;
+using ModelLayer.Model; 
+using RepositoryLayer.Context;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace BusinessLayer.Service
 {
     public class AddressBL : IAddressBookBL
     {
-        private readonly IAddressRL _addressBookRL;
+        private readonly AddressContext _context; 
 
-        public AddressBL(IAddressRL addressBookRL)
+        public AddressBL(AddressContext context) 
         {
-            _addressBookRL = addressBookRL;
+            _context = context;
         }
 
-        public List<AddressEntity> GetAllContacts()
+        public List<Contact> GetAllContacts() => _context.Contacts.ToList(); 
+
+        public Contact GetContactById(int id) => _context.Contacts.FirstOrDefault(a => a.Id == id); 
+
+        public Contact AddContact(Contact contact)
         {
-            return _addressBookRL.GetAllContacts();
+            _context.Contacts.Add(contact); 
+            _context.SaveChanges();
+            return contact;
         }
 
-        public AddressEntity GetContactById(int id)
+        public Contact UpdateContact(int id, Contact contact)
         {
-            return _addressBookRL.GetContactById(id);
-        }
+            var existingContact = _context.Contacts.FirstOrDefault(a => a.Id == id);
+            if (existingContact == null) return null;
 
-        public AddressEntity AddContact(AddressEntity contact)
-        {
-            if (string.IsNullOrEmpty(contact.Name) || string.IsNullOrEmpty(contact.Address))
-            {
-                throw new ArgumentException("Name and Address cannot be empty.");
-            }
-            return _addressBookRL.AddContact(contact);
-        }
+            existingContact.Name = contact.Name;
+            existingContact.Address = contact.Address;
+            existingContact.Email = contact.Email;
+            existingContact.PhoneNumber = contact.PhoneNumber;
 
-        public AddressEntity UpdateContact(int id, AddressEntity contact)
-        {
-            var existingContact = _addressBookRL.GetContactById(id);
-            if (existingContact == null)
-            {
-                return null; // Not found
-            }
-            return _addressBookRL.UpdateContact(id, contact);
+            _context.SaveChanges();
+            return existingContact;
         }
 
         public bool DeleteContact(int id)
         {
-            return _addressBookRL.DeleteContact(id);
+            var contact = _context.Contacts.FirstOrDefault(a => a.Id == id);
+            if (contact == null) return false;
+
+            _context.Contacts.Remove(contact);
+            _context.SaveChanges();
+            return true;
         }
     }
 }

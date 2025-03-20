@@ -8,7 +8,7 @@ namespace BusinessLayer.Service
     {
         public AutomapperProfile()
         {
-            CreateMap<AddressEntity, AddressBookDTO>().ReverseMap();
+            CreateMap<User, UserDTO>().ReverseMap();
         }
     }
 }

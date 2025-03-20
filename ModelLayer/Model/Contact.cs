@@ -1,12 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace RepositoryLayer.Entity
+namespace ModelLayer.Model
 {
-    [Table("AddressBook")]
-    public class AddressEntity
+    public class Contact
     {
-        [Key]
         public int Id { get; set; }
 
         [Required]
